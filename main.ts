@@ -1,6 +1,4 @@
 import { App, Editor, MarkdownView, Plugin, PluginSettingTab, Setting } from 'obsidian';
-// import { SSE } from 'sse';
-// import axios from 'axios';
 import * as https from 'https';
 // Remember to rename these classes and interfaces!
 
