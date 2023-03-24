@@ -1,6 +1,5 @@
 import { App, Editor, MarkdownView, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { Configuration, OpenAIApi, CreateChatCompletionResponse } from 'openai';
-import { SSE } from 'sse.js';
 // Remember to rename these classes and interfaces!
 
 
@@ -64,7 +63,7 @@ async function getText(prompt: string, key: string, callback: (data: CreateChatC
 			{"role": "system", "content": "You are a helpful assistant who provides accurate responses to user requests."},
 			{"role": "user", "content": prompt},
 		],
-		stream: true,
+		stream: false,
 		max_tokens: 500,
 		temperature: 0.9,
 		stop: "\n",
@@ -72,7 +71,8 @@ async function getText(prompt: string, key: string, callback: (data: CreateChatC
 		top_p: 1,
 		n: 1,
 	});
-	completion.
+	const response = await completion;
+	callback(response.data);
 }
 
 class SampleSettingTab extends PluginSettingTab {
