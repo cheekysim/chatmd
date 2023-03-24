@@ -31,33 +31,33 @@ export default class ChatMD extends Plugin {
 			id: "chatmd",
 			name: "Ask Chat GPT",
 			editorCallback: (editor: Editor, view: MarkdownView) => {
-				if (editor.getSelection() == "") {
-					editor.replaceSelection("Please Select Text To Ask Chat GPT");
-				} else {
-						(async () => {const prompt = editor.getSelection()
+				(async () => {
+					let prompt = editor.getSelection()
+					if (prompt == "") {
+						prompt = editor.getLine(editor.getCursor().line);
+						editor.replaceRange("", {line: editor.getCursor().line, ch: 0}, {line: editor.getCursor().line, ch: prompt.length});
+					} else {
 						editor.replaceSelection("");
-						const options = {
-							key: this.settings.apikey,
-							max_tokens: this.settings.max_tokens,
-							temperature: this.settings.temperature,
-							presence_penalty: this.settings.presence_penalty,
-							frequency_penalty: this.settings.frequency_penalty
-						}
-						await getText(prompt, options, (data) => {
-							const lines = data.split('\n');
-							lines.forEach((line) => {
-								if (line.startsWith("data: ")) {
-									if (line.includes("[DONE]")) return;
-									const message = JSON.parse(line.substring(6));
-									if (message.choices) {
-										if (message.choices[0].delta.content) {
-											editor.replaceSelection(message.choices[0].delta.content);
-										}
-									}
+					}
+					const options = {
+						key: this.settings.apikey,
+						max_tokens: this.settings.max_tokens,
+						temperature: this.settings.temperature,
+						presence_penalty: this.settings.presence_penalty,
+						frequency_penalty: this.settings.frequency_penalty
+					}
+					await getText(prompt, options, (data) => {
+						const lines = data.split('\n');
+						lines.forEach((line) => {
+							if (line.startsWith("data: ")) {
+								if (line.includes("[DONE]")) return;
+								const message = JSON.parse(line.substring(6));
+								if (message.choices[0].delta.content) {
+									editor.replaceSelection(message.choices[0].delta.content);
 								}
-							});
-						});})();
-				}
+							}
+						});
+				});})();
 			},
 			hotkeys: [
 				{
