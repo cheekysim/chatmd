@@ -23,6 +23,11 @@ By adjusting these settings, users can tailor the generated output to their spec
 
 It's important to note that changing these settings can impact the quality and coherence of the generated text. Users should experiment with different values to find the right balance between creativity, coherence, and relevance for their use case.
 
+## Future
+Chat MD will be expanded in the future with the ability to have a conversation in a side panel, allowing for follow up questions instead of only one prompt
+
+In the future preset features may be added, such as summary, re-writing, expanding on points.
+
 ## Licensing
 Chat MD is an open-source plugin and licensed under the MIT license. The plugin is free to use and modify to meet your needs.
 
