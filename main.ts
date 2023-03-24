@@ -90,7 +90,10 @@ async function getText(prompt: string,
 	{
 		const postData = JSON.stringify({
 		model: 'gpt-3.5-turbo',
-		messages: [{ role: 'user', content: prompt }],
+		messages: [
+			{ role: 'system', content: 'You are a helpful assistant whos responses are formatted using markdown.'},
+			{ role: 'user', content: prompt }
+		],
 		stream: true,
 		max_tokens: chatOptions.max_tokens,
 		temperature: chatOptions.temperature,
