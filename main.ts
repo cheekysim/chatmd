@@ -1,6 +1,7 @@
 import { App, Editor, MarkdownView, Plugin, PluginSettingTab, Setting } from 'obsidian';
-import { Configuration, OpenAIApi, CreateChatCompletionResponse } from 'openai';
-import { SSE } from 'sse.js';
+// import { SSE } from 'sse';
+// import axios from 'axios';
+import * as https from 'https';
 // Remember to rename these classes and interfaces!
 
 
@@ -30,7 +31,19 @@ export default class MyPlugin extends Plugin {
 						(async () => {const prompt = editor.getSelection()
 						editor.replaceSelection("");
 						await getText(prompt, this.settings.apikey, (data) => {
-							editor.replaceSelection(data.choices[0].message?.content as string);
+							const lines = data.split('\n');
+							lines.forEach((line) => {
+								if (line.startsWith("data: ")) {
+									if (line.includes("[DONE]")) return;
+									const message = JSON.parse(line.substring(6));
+									if (message.choices) {
+										if (message.choices[0].delta.content) {
+											editor.replaceSelection(message.choices[0].delta.content);
+										}
+									}
+								}
+							});
+							// editor.replaceSelection(data.choices[0].message?.content as string);
 						});})();
 				}
 			}
@@ -53,26 +66,38 @@ export default class MyPlugin extends Plugin {
 }
 
 
-async function getText(prompt: string, key: string, callback: (data: CreateChatCompletionResponse) => void) {
-	const config = new Configuration({
-		apiKey: key
-	})
-	const openai = new OpenAIApi(config)
-	const completion = openai.createChatCompletion({
-		model: "gpt-3.5-turbo",
-		messages: [
-			{"role": "system", "content": "You are a helpful assistant who provides accurate responses to user requests."},
-			{"role": "user", "content": prompt},
-		],
-		stream: true,
-		max_tokens: 500,
-		temperature: 0.9,
-		stop: "\n",
-		frequency_penalty: 0.2,
-		top_p: 1,
-		n: 1,
+async function getText(prompt: string, key: string, callback: { (data: string): void; (arg0: string): void; }) {
+	const postData = JSON.stringify({
+	model: 'gpt-3.5-turbo',
+	messages: [{ role: 'user', content: prompt }],
+	stream: true,
+	max_tokens: 100
 	});
-	completion.
+
+	const options = {
+	hostname: 'api.openai.com',
+	path: '/v1/chat/completions',
+	method: 'POST',
+	headers: {
+		'Content-Type': 'application/json',
+		'Authorization': `Bearer ${key}`,
+		'Content-Length': postData.length
+	}
+	};
+
+	const req = https.request(options, (res) => {
+	res.on('data', (chunk) => {
+		callback(chunk.toString())
+	});
+	});
+
+	req.on('error', (error) => {
+	console.error('Error sending request:', error);
+	});
+
+	req.write(postData);
+	req.end();
+
 }
 
 class SampleSettingTab extends PluginSettingTab {
