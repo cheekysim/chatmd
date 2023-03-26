@@ -33,3 +33,5 @@ Chat MD is an open-source plugin and licensed under the MIT license. The plugin 
 
 ## Disclaimer
 The Chat MD plugin utilizes OpenAI's GPT-3.5-turbo model, which may incur costs depending on usage. Users are responsible for ensuring they have permission to use the API and for any associated costs.
+
+Also yes this was written with Chat GPT
