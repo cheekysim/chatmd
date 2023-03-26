@@ -6,6 +6,8 @@ import {
 	Plugin,
 	PluginSettingTab,
 	Setting,
+	ItemView,
+	WorkspaceLeaf,
 } from "obsidian";
 import * as https from "https";
 // Remember to rename these classes and interfaces!
@@ -30,7 +32,17 @@ export default class ChatMD extends Plugin {
 	settings: Settings;
 
 	async onload() {
+		console.log("loading chatmd")
 		await this.loadSettings();
+
+		this.registerView('chatmd', (leaf) => {
+			return new ChatMDView(leaf);
+		});
+
+		this.addRibbonIcon("dice", "Chat MD", () => {
+			loadSidebar.call(this);
+		});
+
 		this.addCommand({
 			id: "chatmd",
 			name: "Ask Chat GPT",
@@ -84,6 +96,14 @@ export default class ChatMD extends Plugin {
 			],
 		});
 
+		this.addCommand({
+			id: "chatmd-sidebar",
+			name: "Open Chat MD Sidebar",
+			callback: () => {
+				loadSidebar.call(this);
+			}
+		})
+
 		this.addSettingTab(new SettingsTab(this.app, this));
 	}
 
@@ -99,6 +119,22 @@ export default class ChatMD extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+	}
+}
+
+async function loadSidebar(this: ChatMD) {
+	const leaves = this.app.workspace.getLeavesOfType('chatmd');
+	if (leaves.length > 0) {
+		this.app.workspace.revealLeaf(leaves[0]);
+	} else {
+		// eslint-disable-next-line prefer-const
+		let leaf = this.app.workspace.getRightLeaf(false);
+		if (leaf) {
+			leaf.setViewState({
+				type: 'chatmd',
+				active: true,
+			});
+		}
 	}
 }
 
@@ -146,6 +182,32 @@ async function getText(
 
 	req.write(postData);
 	req.end();
+}
+
+class ChatMDView extends ItemView {
+	constructor(leaf: WorkspaceLeaf) {
+		super(leaf);
+		this.icon = "dice";
+		this.containerEl.empty();
+		this.containerEl.createEl("h1", { text: this.getDisplayText() }).addClass("chatmd-header");
+		const container = this.containerEl.createDiv("chatmd-message-container");
+		for (let index = 0; index < 10; index++) {
+			const msg = container.createEl("p", { text: "Welcome to Chat MD!" });
+			msg.setAttribute("data-role", "ai");
+			msg.addClass("chatmd-message");
+			const msg2 = container.createEl("p", { text: "This is the USER!" });
+			msg2.setAttribute("data-role", "user");
+			msg2.addClass("chatmd-message");
+		}
+	}
+
+	getViewType(): string {
+		return "chatmd";
+	}
+
+	getDisplayText(): string {
+		return "Chat MD";
+	}
 }
 
 class SettingsTab extends PluginSettingTab {
