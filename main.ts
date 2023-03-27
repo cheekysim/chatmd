@@ -64,7 +64,7 @@ export default class ChatMD extends Plugin {
 							{
 								role: "system",
 								content:
-									"You are a helpful assistant whos responses are formatted using markdown.",
+									"You are an ai note taking assistant. Format your responses using markdown",
 							},
 							{ role: "user", content: prompt },
 						],
@@ -199,6 +199,11 @@ class ChatMDView extends ItemView {
 			msg2.setAttribute("data-role", "user");
 			msg2.addClass("chatmd-message");
 		}
+		const inputForm = this.containerEl.createEl('form')
+		inputForm.addClass('chatmd-input-form')
+		inputForm.createEl('button', { text: "New Chat" }).addClass('chatmd-new-chat')
+		inputForm.createEl("input", { text: "Input Test" }).addClass('chatmd-input')
+		inputForm.createEl('button', { text: "Send" }).addClass('chatmd-send')	
 	}
 
 	getViewType(): string {

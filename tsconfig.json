@@ -9,6 +9,7 @@
     "noImplicitAny": true,
     "moduleResolution": "node",
     "importHelpers": true,
+    "outDir": ".obsidian/plugins/chatmd",
     "isolatedModules": true,
 	"strictNullChecks": true,
     "lib": [
