@@ -10,7 +10,6 @@ import {
 	WorkspaceLeaf,
 } from "obsidian";
 import * as https from "https";
-import * as fs from "fs";
 import { Configuration, OpenAIApi, CreateImageRequestSizeEnum } from "openai";
 // Remember to rename these classes and interfaces!
 
@@ -20,6 +19,8 @@ interface Settings {
 	temperature: number;
 	presence_penalty: number;
 	frequency_penalty: number;
+	image_path: string;
+	image_size: string;
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -28,6 +29,8 @@ const DEFAULT_SETTINGS: Settings = {
 	temperature: 0.8,
 	presence_penalty: 1,
 	frequency_penalty: 1,
+	image_path: "images",
+	image_size: "256",
 };
 
 export default class ChatMD extends Plugin {
@@ -45,20 +48,27 @@ export default class ChatMD extends Plugin {
 			loadSidebar.call(this);
 		});
 
-		this.addRibbonIcon("dice", "Generate Image", () => {
+		this.addRibbonIcon("dice", "Generate Image", async () => {
 			console.log("Clicked");
-			const config = {
-				apikey: this.settings.apikey,
-				size: 256
-			};
-			getImage("Dog", config, async (data) => {
-				// Get image from data (url)
-				const image = await fetch(data);
-				const blob = await image.blob();
-				console.log(blob.type);
-				// Create new file
+			await downloadImage("https://picsum.photos/200/300", "image.png");
+			const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+			if (!view) return;
+			const editor = view.editor;
+			const position = editor.getCursor();
+			editor.replaceRange("![[image.png]]", position, position);
+			editor.setCursor(position.line + 1, position.ch);
+			// const config = {
+			// 	apikey: this.settings.apikey,
+			// 	size: 256
+			// };
+			// getImage("Dog", config, async (data) => {
+			// 	// Get image from data (url)
+			// 	const image = await fetch(data);
+			// 	const blob = await image.blob();
+			// 	console.log(blob.type);
+			// // 	// Create new file
 
-			});
+			// });
 		});
 
 		this.addCommand({
@@ -77,33 +87,49 @@ export default class ChatMD extends Plugin {
 					} else {
 						editor.replaceSelection("");
 					}
-					await getText(
-						[
-							{
-								role: "system",
-								content:
-									"You are an ai note taking assistant. Format your responses using markdown",
-							},
-							{ role: "user", content: prompt },
-						],
-						this.settings,
-						(data) => {
-							const lines = data.split("\n");
-							lines.forEach((line) => {
-								if (line.startsWith("data: ")) {
-									if (line.includes("[DONE]")) return;
-									const message = JSON.parse(
-										line.substring(6)
-									);
-									if (message.choices[0].delta.content) {
-										editor.replaceSelection(
-											message.choices[0].delta.content
+					if (prompt.toLowerCase().startsWith("make an image of")) {
+						prompt = prompt.substring(17);
+						console.log(prompt);
+						// console.log(data)
+						await downloadImage(
+							// "https://picsum.photos/200/300",
+							"https://oaidalleapiprodscus.blob.core.windows.net/private/org-I3tE9qHjKbGBnSuVL3BXTYTB/user-cc8h2DHOL5M4NZWQr0MK9ndG/img-wVy2KeIvCPJw6nE2EJ90KlKM.png?st=2023-03-29T08%3A24%3A47Z&se=2023-03-29T10%3A24%3A47Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/png&skoid=6aaadede-4fb3-4698-a8f6-684d7786b067&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2023-03-28T23%3A36%3A23Z&ske=2023-03-29T23%3A36%3A23Z&sks=b&skv=2021-08-06&sig=%2BCTNWMGwkJJpA4ZZUSnVG2YtGlRdH4WN66YddXeKtto%3D",
+							`${this.settings.image_path}/${prompt}.png`
+						);App
+						editor.replaceSelection(
+							`![[${this.settings.image_path}/${prompt}.png]]`
+						);
+						// getImage(prompt, this.settings, async (data) => {
+						// });
+					} else {
+						await getText(
+							[
+								{
+									role: "system",
+									content:
+										"You are an ai note taking assistant. Format your responses using markdown",
+								},
+								{ role: "user", content: prompt },
+							],
+							this.settings,
+							(data) => {
+								const lines = data.split("\n");
+								lines.forEach((line) => {
+									if (line.startsWith("data: ")) {
+										if (line.includes("[DONE]")) return;
+										const message = JSON.parse(
+											line.substring(6)
 										);
+										if (message.choices[0].delta.content) {
+											editor.replaceSelection(
+												message.choices[0].delta.content
+											);
+										}
 									}
-								}
-							});
-						}
-					);
+								});
+							}
+						);
+					}
 				})();
 			},
 			hotkeys: [
@@ -156,6 +182,14 @@ async function loadSidebar(this: ChatMD) {
 	}
 }
 
+async function downloadImage(url: string, path: string): Promise<string> {
+	const response = await fetch(url);
+	const blob = await response.blob();
+	const buffer = await blob.arrayBuffer();
+	app.vault.createBinary(path, buffer);
+	return path;
+}
+
 async function getText(
 	prompt: { role: string; content: string }[],
 	chatOptions: {
@@ -204,7 +238,7 @@ async function getText(
 
 async function getImage(
 	prompt: string,
-	config: { apikey: string; size: number },
+	config: { apikey: string; image_size: string },
 	callback: { (data: string): void; (arg0: string): void }
 ) {
 	console.log("Getting Image");
@@ -212,8 +246,9 @@ async function getImage(
 		apiKey: config.apikey,
 	});
 	let size: CreateImageRequestSizeEnum = CreateImageRequestSizeEnum._256x256;
-	if (config.size >= 1024) size = CreateImageRequestSizeEnum._1024x1024;
-	else if (config.size >= 512) size = CreateImageRequestSizeEnum._512x512;
+	const image_size = parseInt(config.image_size);
+	if (image_size >= 1024) size = CreateImageRequestSizeEnum._1024x1024;
+	else if (image_size >= 512) size = CreateImageRequestSizeEnum._512x512;
 	const openai = new OpenAIApi(configuration);
 	const response = await openai.createImage({
 		prompt: prompt,
@@ -408,5 +443,34 @@ class SettingsTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					})
 			);
+
+		new Setting(containerEl)
+			.setName("Image Size")
+			.setDesc("Enter Image Size")
+			.addDropdown((dropdown) => {
+				dropdown
+					.addOptions({
+						"256": "256",
+						"512": "512",
+						"1024": "1024",
+					})
+					.setValue(this.plugin.settings.image_size)
+					.onChange(async (value) => {
+						this.plugin.settings.image_size = value;
+						await this.plugin.saveSettings();
+					});
+			});
+
+		new Setting(containerEl)
+			.setName("Image Path")
+			.setDesc("Enter Image Path")
+			.addText((text) => {
+				text.setPlaceholder("Image Path")
+					.setValue(this.plugin.settings.image_path)
+					.onChange(async (value) => {
+						this.plugin.settings.image_path = value;
+						await this.plugin.saveSettings();
+					});
+			});
 	}
 }
