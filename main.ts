@@ -91,16 +91,18 @@ export default class ChatMD extends Plugin {
 						prompt = prompt.substring(17);
 						console.log(prompt);
 						// console.log(data)
+						// await getImage(prompt, this.settings, async (data) => {
+						// 	console.log(data);
+						// });
 						await downloadImage(
 							// "https://picsum.photos/200/300",
-							"https://oaidalleapiprodscus.blob.core.windows.net/private/org-I3tE9qHjKbGBnSuVL3BXTYTB/user-cc8h2DHOL5M4NZWQr0MK9ndG/img-wVy2KeIvCPJw6nE2EJ90KlKM.png?st=2023-03-29T08%3A24%3A47Z&se=2023-03-29T10%3A24%3A47Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/png&skoid=6aaadede-4fb3-4698-a8f6-684d7786b067&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2023-03-28T23%3A36%3A23Z&ske=2023-03-29T23%3A36%3A23Z&sks=b&skv=2021-08-06&sig=%2BCTNWMGwkJJpA4ZZUSnVG2YtGlRdH4WN66YddXeKtto%3D",
+							"https://oaidalleapiprodscus.blob.core.windows.net/private/org-I3tE9qHjKbGBnSuVL3BXTYTB/user-cc8h2DHOL5M4NZWQr0MK9ndG/img-UzjJNU5cyEpSq9QognwWVwBE.png?st=2023-03-29T18%3A26%3A08Z&se=2023-03-29T20%3A26%3A08Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/png&skoid=6aaadede-4fb3-4698-a8f6-684d7786b067&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2023-03-29T16%3A38%3A34Z&ske=2023-03-30T16%3A38%3A34Z&sks=b&skv=2021-08-06&sig=5x/codxQc8JWTHnodNGsiL6vyUdm1T0PAdKfELDJJig%3D",
 							`${this.settings.image_path}/${prompt}.png`
-						);App
+						);
+						App;
 						editor.replaceSelection(
 							`![[${this.settings.image_path}/${prompt}.png]]`
 						);
-						// getImage(prompt, this.settings, async (data) => {
-						// });
 					} else {
 						await getText(
 							[
@@ -183,7 +185,10 @@ async function loadSidebar(this: ChatMD) {
 }
 
 async function downloadImage(url: string, path: string): Promise<string> {
-	const response = await fetch(url);
+	const response = await fetch(url, {
+		method: "GET",
+		headers: { "Access-Control-Allow-Origin": "*" },
+	});
 	const blob = await response.blob();
 	const buffer = await blob.arrayBuffer();
 	app.vault.createBinary(path, buffer);
